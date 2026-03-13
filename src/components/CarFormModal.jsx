@@ -27,41 +27,44 @@ export default function CarFormModal({ isOpen, onClose, onSubmit, initialData })
   const fuelTypes = ['PETROL', 'DIESEL', 'ELECTRIC', 'HYBRID'];
   const transmissions = ['MANUAL', 'AUTOMATIC'];
 
-  // Reset form when initialData changes
+  // Reset form whenever modal opens or initialData changes
   useEffect(() => {
-    if (initialData) {
-      reset({
-        name: initialData.name || '',
-        brand: initialData.brand || '',
-        model: initialData.model || '',
-        year: initialData.year || new Date().getFullYear(),
-        licensePlate: initialData.licensePlate || '',
-        type: initialData.type || 'SEDAN',
-        fuelType: initialData.fuelType || 'PETROL',
-        transmission: initialData.transmission || 'AUTOMATIC',
-        seats: initialData.seats || 5,
-        pricePerDay: initialData.pricePerDay || 50,
-        description: initialData.description || '',
-        isAvailable: initialData.isAvailable ?? true,
-      });
-    } else {
-      reset(); // reset to defaults for new car
-    }
-  }, [initialData, reset]);
-
-  // Update image previews when initialData changes
-  useEffect(() => {
-    if (initialData?.images) {
-      try {
-        setImagePreviews(JSON.parse(initialData.images));
-      } catch (e) {
+    if (isOpen) {
+      if (initialData) {
+        // Editing: populate with existing data
+        reset({
+          name: initialData.name || '',
+          brand: initialData.brand || '',
+          model: initialData.model || '',
+          year: initialData.year || new Date().getFullYear(),
+          licensePlate: initialData.licensePlate || '',
+          type: initialData.type || 'SEDAN',
+          fuelType: initialData.fuelType || 'PETROL',
+          transmission: initialData.transmission || 'AUTOMATIC',
+          seats: initialData.seats || 5,
+          pricePerDay: initialData.pricePerDay || 50,
+          description: initialData.description || '',
+          isAvailable: initialData.isAvailable ?? true,
+        });
+        // Set image previews from existing images
+        if (initialData.images) {
+          try {
+            setImagePreviews(JSON.parse(initialData.images));
+          } catch (e) {
+            setImagePreviews([]);
+          }
+        } else {
+          setImagePreviews([]);
+        }
+        setNewImages([]);
+      } else {
+        // New car: reset to defaults
+        reset();
         setImagePreviews([]);
+        setNewImages([]);
       }
-    } else {
-      setImagePreviews([]);
     }
-    setNewImages([]);
-  }, [initialData]);
+  }, [isOpen, initialData, reset]);
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
