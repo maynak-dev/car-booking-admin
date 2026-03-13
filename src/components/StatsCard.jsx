@@ -1,6 +1,7 @@
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-export default function StatsCard({ title, value, icon: Icon, color = 'primary', change, trend }) {
+export default function StatsCard({ title, value, icon: Icon, color = 'primary', change, trend, to }) {
   const colors = {
     primary: 'from-primary-500 to-primary-600',
     green: 'from-green-500 to-green-600',
@@ -9,10 +10,10 @@ export default function StatsCard({ title, value, icon: Icon, color = 'primary',
     orange: 'from-orange-500 to-orange-600',
   };
 
-  return (
+  const cardContent = (
     <motion.div
       whileHover={{ y: -4 }}
-      className="stat-card overflow-hidden relative"
+      className={`stat-card overflow-hidden relative ${to ? 'cursor-pointer' : ''}`}
     >
       <div className="flex items-start justify-between">
         <div>
@@ -32,4 +33,14 @@ export default function StatsCard({ title, value, icon: Icon, color = 'primary',
       <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${colors[color]}`} />
     </motion.div>
   );
+
+  if (to) {
+    return (
+      <Link to={to} className="block">
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return cardContent;
 }
