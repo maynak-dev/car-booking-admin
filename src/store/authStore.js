@@ -23,7 +23,7 @@ const useAuthStore = create((set) => ({
     localStorage.removeItem('refreshToken');
     set({ user: null, isAuthenticated: false });
     toast.success('Logged out');
-    window.location.href = '/admin/login';
+    window.location.href = '/login';
   },
   checkAuth: async () => {
     const token = localStorage.getItem('accessToken');
@@ -32,6 +32,8 @@ const useAuthStore = create((set) => ({
       const { data } = await API.get('/users/profile');
       set({ user: data, isAuthenticated: true });
     } catch {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       set({ user: null, isAuthenticated: false });
     }
   },

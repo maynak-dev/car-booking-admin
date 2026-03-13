@@ -1,12 +1,14 @@
 import axios from 'axios';
 
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-});
+const baseURL = import.meta.env.VITE_API_URL || '/api';
+
+const API = axios.create({ baseURL });
 
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem('accessToken');
-  if (token) req.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    req.headers.Authorization = `Bearer ${token}`;
+  }
   return req;
 });
 
@@ -23,7 +25,7 @@ API.interceptors.response.use(
         API.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
         return API(originalRequest);
       } catch (refreshError) {
-        window.location.href = '/admin/login';
+        window.location.href = '/login';
       }
     }
     return Promise.reject(err);
