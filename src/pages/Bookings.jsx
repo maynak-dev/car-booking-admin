@@ -22,6 +22,23 @@ export default function Bookings() {
     }
   });
 
+  // New mutation for updating payment status
+  const updatePaymentStatus = useMutation({
+    mutationFn: ({ id, paymentStatus }) => API.put(`/admin/bookings/${id}/payment`, { paymentStatus }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['adminBookings']);
+      toast.success('Payment status updated');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update payment status');
+    }
+  });
+
+  const handlePaymentToggle = (booking) => {
+    const newStatus = booking.paymentStatus === 'PAID' ? 'PENDING' : 'PAID';
+    updatePaymentStatus.mutate({ id: booking.id, paymentStatus: newStatus });
+  };
+
   const columns = [
     { key: 'id', label: 'ID' },
     {
@@ -61,14 +78,21 @@ export default function Bookings() {
     {
       key: 'paymentStatus',
       label: 'Payment',
-      render: (val) => {
-        const colors = {
-          PAID: 'bg-green-100 text-green-800',
-          PENDING: 'bg-yellow-100 text-yellow-800',
-          REFUNDED: 'bg-purple-100 text-purple-800',
-          FAILED: 'bg-red-100 text-red-800',
-        };
-        return <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[val] || 'bg-gray-100 text-gray-800'}`}>{val}</span>;
+      render: (val, booking) => {
+        const isPaid = val === 'PAID';
+        return (
+          <button
+            onClick={() => handlePaymentToggle(booking)}
+            disabled={updatePaymentStatus.isPending}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+              isPaid
+                ? 'bg-green-100 text-green-800 hover:bg-green-200 focus:ring-green-500'
+                : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 focus:ring-yellow-500'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {isPaid ? 'Paid' : 'Not Paid'}
+          </button>
+        );
       }
     },
   ];
