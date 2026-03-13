@@ -12,7 +12,7 @@ export default function Users() {
   });
 
   const toggleBlock = useMutation({
-    mutationFn: ({ id, isActive }) => API.put(`/admin/users/${id}/block`, { isActive: !isActive }),
+    mutationFn: ({ id, isActive }) => API.put(`/admin/users/${id}/block`, { isActive }), // Send the selected isActive directly, not toggled
     onSuccess: () => {
       queryClient.invalidateQueries(['adminUsers']);
       toast.success('User status updated');
@@ -43,6 +43,11 @@ export default function Users() {
     },
   ];
 
+  const statusOptions = [
+    { value: true, label: 'Active' },
+    { value: false, label: 'Blocked' }
+  ];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -61,11 +66,8 @@ export default function Users() {
       <DataTable
         columns={columns}
         data={users || []}
-        onStatusChange={(id, isActive) => toggleBlock.mutate({ id, isActive })}
-        statusOptions={[
-          { value: true, label: 'Active' },
-          { value: false, label: 'Blocked' }
-        ]}
+        onStatusChange={(id, newStatus) => toggleBlock.mutate({ id, isActive: newStatus })}
+        statusOptions={statusOptions}
       />
     </div>
   );
