@@ -1,0 +1,6 @@
+{
+  "basePath": "/admin",
+  "rewrites": [
+    { "source": "/admin/(.*)", "destination": "/index.html" }
+  ]
+}
