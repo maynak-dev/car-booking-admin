@@ -1,10 +1,10 @@
 import { useForm } from 'react-hook-form';
 import { FaTimes, FaUpload, FaTrash } from 'react-icons/fa';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function CarFormModal({ isOpen, onClose, onSubmit, initialData }) {
-  const { register, handleSubmit } = useForm({
-    defaultValues: initialData || {
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    defaultValues: {
       name: '',
       brand: '',
       model: '',
@@ -20,14 +20,48 @@ export default function CarFormModal({ isOpen, onClose, onSubmit, initialData })
     }
   });
 
-  const [imagePreviews, setImagePreviews] = useState(
-    initialData?.images ? JSON.parse(initialData.images) : []
-  );
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [newImages, setNewImages] = useState([]);
 
   const carTypes = ['SUV', 'SEDAN', 'HATCHBACK', 'CONVERTIBLE', 'COUPE', 'WAGON', 'VAN', 'PICKUP'];
   const fuelTypes = ['PETROL', 'DIESEL', 'ELECTRIC', 'HYBRID'];
   const transmissions = ['MANUAL', 'AUTOMATIC'];
+
+  // Reset form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        name: initialData.name || '',
+        brand: initialData.brand || '',
+        model: initialData.model || '',
+        year: initialData.year || new Date().getFullYear(),
+        licensePlate: initialData.licensePlate || '',
+        type: initialData.type || 'SEDAN',
+        fuelType: initialData.fuelType || 'PETROL',
+        transmission: initialData.transmission || 'AUTOMATIC',
+        seats: initialData.seats || 5,
+        pricePerDay: initialData.pricePerDay || 50,
+        description: initialData.description || '',
+        isAvailable: initialData.isAvailable ?? true,
+      });
+    } else {
+      reset(); // reset to defaults for new car
+    }
+  }, [initialData, reset]);
+
+  // Update image previews when initialData changes
+  useEffect(() => {
+    if (initialData?.images) {
+      try {
+        setImagePreviews(JSON.parse(initialData.images));
+      } catch (e) {
+        setImagePreviews([]);
+      }
+    } else {
+      setImagePreviews([]);
+    }
+    setNewImages([]);
+  }, [initialData]);
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
