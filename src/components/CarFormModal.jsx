@@ -1,9 +1,10 @@
 import { useForm } from 'react-hook-form';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaUpload, FaTrash } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 
 export default function CarFormModal({ isOpen, onClose, onSubmit, initialData }) {
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm({
     defaultValues: initialData || {
       name: '',
       brand: '',
@@ -20,9 +21,57 @@ export default function CarFormModal({ isOpen, onClose, onSubmit, initialData })
     }
   });
 
+  const [imagePreviews, setImagePreviews] = useState(
+    initialData?.images ? JSON.parse(initialData.images) : []
+  );
+  const [newImages, setNewImages] = useState([]);
+
   const carTypes = ['SUV', 'SEDAN', 'HATCHBACK', 'CONVERTIBLE', 'COUPE', 'WAGON', 'VAN', 'PICKUP'];
   const fuelTypes = ['PETROL', 'DIESEL', 'ELECTRIC', 'HYBRID'];
   const transmissions = ['MANUAL', 'AUTOMATIC'];
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setNewImages(prev => [...prev, ...files]);
+    
+    // Create preview URLs
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index) => {
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setNewImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const onFormSubmit = (data) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+      if (key === 'isAvailable') {
+        formData.append(key, data[key] ? 'true' : 'false');
+      } else if (key !== 'images') {
+        formData.append(key, data[key]);
+      }
+    });
+
+    // Append existing image URLs if editing
+    if (initialData) {
+      const existingUrls = imagePreviews.filter(url => url.startsWith('http'));
+      formData.append('existingImages', JSON.stringify(existingUrls));
+    }
+
+    // Append new image files
+    newImages.forEach(file => {
+      formData.append('images', file);
+    });
+
+    onSubmit(formData);
+  };
 
   if (!isOpen) return null;
 
@@ -52,7 +101,7 @@ export default function CarFormModal({ isOpen, onClose, onSubmit, initialData })
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
@@ -161,13 +210,60 @@ export default function CarFormModal({ isOpen, onClose, onSubmit, initialData })
                   ></textarea>
                 </div>
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    {...register('isAvailable')}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <label className="ml-2 block text-sm text-gray-900">Available for booking</label>
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Car Images</label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                    <div className="space-y-1 text-center">
+                      <FaUpload className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex text-sm text-gray-600">
+                        <label htmlFor="images" className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                          <span>Upload files</span>
+                          <input
+                            id="images"
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="sr-only"
+                            onChange={handleImageChange}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Image Previews */}
+                {imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {imagePreviews.map((src, index) => (
+                      <div key={index} className="relative group">
+                        <img src={src} alt={`Preview ${index}`} className="h-20 w-full object-cover rounded-lg border" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <FaTrash size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Availability Toggle */}
+                <div className="flex items-center justify-between py-3">
+                  <label className="text-sm font-medium text-gray-700">Available for booking</label>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      {...register('isAvailable')}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  </label>
                 </div>
 
                 <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3">
