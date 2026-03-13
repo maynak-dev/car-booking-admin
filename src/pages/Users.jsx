@@ -6,13 +6,22 @@ import toast from 'react-hot-toast';
 export default function Users() {
   const queryClient = useQueryClient();
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error } = useQuery({
     queryKey: ['adminUsers'],
-    queryFn: () => API.get('/admin/users').then(res => res.data)
+    queryFn: async () => {
+      const response = await API.get('/admin/users');
+      console.log('API Response:', response); // Log full response
+      return response.data;
+    }
   });
 
+  // Log error if any
+  if (error) {
+    console.error('Error fetching users:', error);
+  }
+
   const toggleBlock = useMutation({
-    mutationFn: ({ id, isActive }) => API.put(`/admin/users/${id}/block`, { isActive }), // Send the selected isActive directly, not toggled
+    mutationFn: ({ id, isActive }) => API.put(`/admin/users/${id}/block`, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries(['adminUsers']);
       toast.success('User status updated');
@@ -55,6 +64,19 @@ export default function Users() {
       </div>
     );
   }
+
+  // If error, show a message
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600 text-lg">Failed to load users. Please try again.</p>
+        <p className="text-gray-500 text-sm mt-2">{error.message}</p>
+      </div>
+    );
+  }
+
+  // Log users data to verify structure
+  console.log('Users data:', users);
 
   return (
     <div>
