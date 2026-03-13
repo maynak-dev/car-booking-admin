@@ -3,21 +3,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import API from '../services/api';
 import DataTable from '../components/DataTable';
 import CarFormModal from '../components/CarFormModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { FaPlus } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 export default function Cars() {
   const [showModal, setShowModal] = useState(false);
   const [editingCar, setEditingCar] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [carToDelete, setCarToDelete] = useState(null);
   const queryClient = useQueryClient();
 
-  // Fetch cars
   const { data: cars, isLoading } = useQuery({
     queryKey: ['adminCars'],
     queryFn: () => API.get('/cars').then(res => res.data.cars)
   });
 
-  // Create car mutation
   const createMutation = useMutation({
     mutationFn: (newCar) => API.post('/cars', newCar, {
       headers: { 'Content-Type': 'multipart/form-data' }
@@ -32,7 +33,6 @@ export default function Cars() {
     }
   });
 
-  // Update car mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => API.put(`/cars/${id}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' }
@@ -48,7 +48,6 @@ export default function Cars() {
     }
   });
 
-  // Delete car mutation
   const deleteMutation = useMutation({
     mutationFn: (id) => API.delete(`/cars/${id}`),
     onSuccess: () => {
@@ -56,11 +55,15 @@ export default function Cars() {
       toast.success('Car deleted successfully');
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Failed to delete car');
+      const message = error.response?.data?.message || '';
+      if (message.includes('Foreign key constraint') || message.includes('Booking')) {
+        toast.error('Cannot delete this car because it has existing bookings. Please cancel or complete those bookings first.');
+      } else {
+        toast.error('Failed to delete car');
+      }
     }
   });
 
-  // Toggle availability mutation (one-click)
   const toggleAvailability = useMutation({
     mutationFn: ({ id, isAvailable }) => {
       const formData = new FormData();
@@ -78,7 +81,6 @@ export default function Cars() {
     }
   });
 
-  // Handle form submission from modal
   const handleSubmit = (formData) => {
     if (editingCar) {
       updateMutation.mutate({ id: editingCar.id, data: formData });
@@ -87,12 +89,15 @@ export default function Cars() {
     }
   };
 
-  // Handle availability toggle
+  const handleDeleteClick = (car) => {
+    setCarToDelete(car);
+    setDeleteDialogOpen(true);
+  };
+
   const handleAvailabilityToggle = (id, currentStatus) => {
     toggleAvailability.mutate({ id, isAvailable: !currentStatus });
   };
 
-  // Define table columns
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'brand', label: 'Brand' },
@@ -100,11 +105,7 @@ export default function Cars() {
     { key: 'year', label: 'Year' },
     { key: 'licensePlate', label: 'License Plate' },
     { key: 'type', label: 'Type' },
-    { 
-      key: 'pricePerDay', 
-      label: 'Price/Day', 
-      render: (val) => `$${val}` 
-    },
+    { key: 'pricePerDay', label: 'Price/Day', render: (val) => `$${val}` },
     {
       key: 'isAvailable',
       label: 'Available',
@@ -139,7 +140,7 @@ export default function Cars() {
         </div>
         <button
           onClick={() => { setEditingCar(null); setShowModal(true); }}
-          className="btn-primary flex items-center gap-2"
+          className="bg-primary-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-700 transition-colors"
         >
           <FaPlus /> Add New Car
         </button>
@@ -148,25 +149,29 @@ export default function Cars() {
       <DataTable
         columns={columns}
         data={cars || []}
-        onEdit={(car) => { 
-          setEditingCar(car); 
-          setShowModal(true); 
-        }}
-        onDelete={(id) => {
-          if (window.confirm('Are you sure you want to delete this car?')) {
-            deleteMutation.mutate(id);
-          }
-        }}
+        onEdit={(car) => { setEditingCar(car); setShowModal(true); }}
+        onDelete={handleDeleteClick}
       />
 
       <CarFormModal
         isOpen={showModal}
-        onClose={() => { 
-          setShowModal(false); 
-          setEditingCar(null); 
-        }}
+        onClose={() => { setShowModal(false); setEditingCar(null); }}
         onSubmit={handleSubmit}
         initialData={editingCar}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => { setDeleteDialogOpen(false); setCarToDelete(null); }}
+        onConfirm={() => {
+          if (carToDelete) {
+            deleteMutation.mutate(carToDelete.id);
+          }
+        }}
+        title="Delete Car"
+        message={`Are you sure you want to delete "${carToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
       />
     </div>
   );
