@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import API from '../services/api';
 import DataTable from '../components/DataTable';
-import CarFormModal from '../components/CarFormModal';
+import AddCarModal from '../components/AddCarModal';
+import EditCarModal from '../components/EditCarModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { FaPlus } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 export default function Cars() {
-  const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingCar, setEditingCar] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [carToDelete, setCarToDelete] = useState(null);
@@ -26,7 +28,7 @@ export default function Cars() {
     onSuccess: () => {
       queryClient.invalidateQueries(['adminCars']);
       toast.success('Car added successfully');
-      setShowModal(false);
+      setShowAddModal(false);
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to add car');
@@ -40,7 +42,7 @@ export default function Cars() {
     onSuccess: () => {
       queryClient.invalidateQueries(['adminCars']);
       toast.success('Car updated successfully');
-      setShowModal(false);
+      setShowEditModal(false);
       setEditingCar(null);
     },
     onError: (error) => {
@@ -81,12 +83,12 @@ export default function Cars() {
     }
   });
 
-  const handleSubmit = (formData) => {
-    if (editingCar) {
-      updateMutation.mutate({ id: editingCar.id, data: formData });
-    } else {
-      createMutation.mutate(formData);
-    }
+  const handleAddSubmit = (formData) => {
+    createMutation.mutate(formData);
+  };
+
+  const handleEditSubmit = (formData) => {
+    updateMutation.mutate({ id: editingCar.id, data: formData });
   };
 
   const handleDeleteClick = (car) => {
@@ -117,7 +119,7 @@ export default function Cars() {
             onChange={() => handleAvailabilityToggle(car.id, val)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+          <div className="w-11 h-6 bg-gray-200 peer-checked:bg-blue-600 rounded-full peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
         </label>
       )
     }
@@ -139,8 +141,8 @@ export default function Cars() {
           <p className="text-gray-500 mt-1">Add, edit, or remove cars from your fleet</p>
         </div>
         <button
-          onClick={() => { setEditingCar(null); setShowModal(true); }}
-          className="bg-primary-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-700 transition-colors"
+          onClick={() => setShowAddModal(true)}
+          className="bg-primary-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-700"
         >
           <FaPlus /> Add New Car
         </button>
@@ -149,14 +151,20 @@ export default function Cars() {
       <DataTable
         columns={columns}
         data={cars || []}
-        onEdit={(car) => { setEditingCar(car); setShowModal(true); }}
+        onEdit={(car) => { setEditingCar(car); setShowEditModal(true); }}
         onDelete={handleDeleteClick}
       />
 
-      <CarFormModal
-        isOpen={showModal}
-        onClose={() => { setShowModal(false); setEditingCar(null); }}
-        onSubmit={handleSubmit}
+      <AddCarModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddSubmit}
+      />
+
+      <EditCarModal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); setEditingCar(null); }}
+        onSubmit={handleEditSubmit}
         initialData={editingCar}
       />
 

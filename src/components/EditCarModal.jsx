@@ -2,23 +2,8 @@ import { useForm } from 'react-hook-form';
 import { FaTimes, FaUpload, FaTrash } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 
-export default function CarFormModal({ isOpen, onClose, onSubmit, initialData }) {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: {
-      name: '',
-      brand: '',
-      model: '',
-      year: new Date().getFullYear(),
-      licensePlate: '',
-      type: 'SEDAN',
-      fuelType: 'PETROL',
-      transmission: 'AUTOMATIC',
-      seats: 5,
-      pricePerDay: 50,
-      description: '',
-      isAvailable: true,
-    }
-  });
+export default function EditCarModal({ isOpen, onClose, onSubmit, initialData }) {
+  const { register, handleSubmit, reset } = useForm();
 
   const [imagePreviews, setImagePreviews] = useState([]);
   const [newImages, setNewImages] = useState([]);
@@ -27,42 +12,39 @@ export default function CarFormModal({ isOpen, onClose, onSubmit, initialData })
   const fuelTypes = ['PETROL', 'DIESEL', 'ELECTRIC', 'HYBRID'];
   const transmissions = ['MANUAL', 'AUTOMATIC'];
 
-  // Reset form whenever modal opens or initialData changes
+  // Populate form when modal opens with initialData
   useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        // Editing: populate with existing data
-        reset({
-          name: initialData.name || '',
-          brand: initialData.brand || '',
-          model: initialData.model || '',
-          year: initialData.year || new Date().getFullYear(),
-          licensePlate: initialData.licensePlate || '',
-          type: initialData.type || 'SEDAN',
-          fuelType: initialData.fuelType || 'PETROL',
-          transmission: initialData.transmission || 'AUTOMATIC',
-          seats: initialData.seats || 5,
-          pricePerDay: initialData.pricePerDay || 50,
-          description: initialData.description || '',
-          isAvailable: initialData.isAvailable ?? true,
-        });
-        // Set image previews from existing images
-        if (initialData.images) {
-          try {
-            setImagePreviews(JSON.parse(initialData.images));
-          } catch (e) {
-            setImagePreviews([]);
-          }
-        } else {
+    if (isOpen && initialData) {
+      reset({
+        name: initialData.name || '',
+        brand: initialData.brand || '',
+        model: initialData.model || '',
+        year: initialData.year || new Date().getFullYear(),
+        licensePlate: initialData.licensePlate || '',
+        type: initialData.type || 'SEDAN',
+        fuelType: initialData.fuelType || 'PETROL',
+        transmission: initialData.transmission || 'AUTOMATIC',
+        seats: initialData.seats || 5,
+        pricePerDay: initialData.pricePerDay || 50,
+        description: initialData.description || '',
+        isAvailable: initialData.isAvailable ?? true,
+      });
+      // Set existing image previews
+      if (initialData.images) {
+        try {
+          setImagePreviews(JSON.parse(initialData.images));
+        } catch {
           setImagePreviews([]);
         }
-        setNewImages([]);
       } else {
-        // New car: reset to defaults
-        reset();
         setImagePreviews([]);
-        setNewImages([]);
       }
+      setNewImages([]);
+    } else if (!isOpen) {
+      // Reset when closed
+      reset();
+      setImagePreviews([]);
+      setNewImages([]);
     }
   }, [isOpen, initialData, reset]);
 
@@ -88,16 +70,14 @@ export default function CarFormModal({ isOpen, onClose, onSubmit, initialData })
     Object.keys(data).forEach(key => {
       if (key === 'isAvailable') {
         formData.append(key, data[key] ? 'true' : 'false');
-      } else if (key !== 'images') {
+      } else {
         formData.append(key, data[key]);
       }
     });
 
-    // Append existing image URLs if editing
-    if (initialData) {
-      const existingUrls = imagePreviews.filter(url => url.startsWith('http'));
-      formData.append('existingImages', JSON.stringify(existingUrls));
-    }
+    // Append existing image URLs (those that start with http)
+    const existingUrls = imagePreviews.filter(url => url.startsWith('http'));
+    formData.append('existingImages', JSON.stringify(existingUrls));
 
     // Append new image files
     newImages.forEach(file => {
@@ -115,7 +95,7 @@ export default function CarFormModal({ isOpen, onClose, onSubmit, initialData })
         <div className="fixed inset-0 bg-black opacity-50" onClick={onClose}></div>
         <div className="relative bg-white rounded-lg w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium">{initialData ? 'Edit Car' : 'Add New Car'}</h3>
+            <h3 className="text-lg font-medium">Edit Car</h3>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
               <FaTimes />
             </button>
@@ -239,7 +219,7 @@ export default function CarFormModal({ isOpen, onClose, onSubmit, initialData })
                 Cancel
               </button>
               <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                {initialData ? 'Update' : 'Save'}
+                Update
               </button>
             </div>
           </form>
